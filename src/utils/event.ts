@@ -64,3 +64,10 @@ export const handleRemovedEvents = (prevEvents: MappedEvent[], currentEvents: Ma
 
   return currentEvents
 }
+
+export const filterRemovedEvents = (events: MappedEvent[]) => {
+  return events.filter((eventObj) => {
+    const event = Object.values(eventObj)[0]
+    return event.status !== "REMOVED"
+  })
+}

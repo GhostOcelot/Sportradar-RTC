@@ -15,7 +15,6 @@ export const pollAndMapEvents = async () => {
 
     if (odds === "") {
       console.warn("Received empty odds. Retrying...")
-      // cachedEvents = handleRemovedEvents(cachedEvents, events)
       cachedEvents = []
       return
     } else {
@@ -25,15 +24,17 @@ export const pollAndMapEvents = async () => {
         return acc
       }, {})
 
-      const events = odds.split("\n").map((item: string) => {
+      let events = odds.split("\n").map((item: string) => {
         const event = item.split(",")
         return mapEvent(event, mappedData)
       })
 
-      cachedEvents = handleRemovedEvents(cachedEvents, events)
-      cachedEvents = events
-
+      console.log("Cached:", cachedEvents.length, "events")
       console.log("Polled:", events.length, "events")
+      console.log("-------")
+
+      events = handleRemovedEvents(cachedEvents, events)
+      cachedEvents = events
     }
   } catch (err: any) {
     console.error("Polling error:", err.message)
