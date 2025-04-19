@@ -1,3 +1,5 @@
+import { MappedEvent } from "./types"
+
 export const getDateFromTimestamp = (timestamp: number) => {
   const date = new Date(timestamp)
 
@@ -42,4 +44,23 @@ export const mapEvent = (eventInfo: any, mappedData: Record<string, string>) => 
       competition: mappedData[eventInfo[2]],
     },
   }
+}
+
+export const handleRemovedEvents = (prevEvents: MappedEvent[], currentEvents: MappedEvent[]) => {
+  const prevEventsKeys = prevEvents.map((event) => Object.keys(event)[0])
+  const currentEventsKeys = currentEvents.map((event) => Object.keys(event)[0])
+
+  const currentEventsKeysSet = new Set(currentEventsKeys)
+
+  prevEventsKeys.forEach((eventId) => {
+    if (!currentEventsKeysSet.has(eventId)) {
+      const removedEvent = prevEvents.find((event) => event[eventId])
+
+      removedEvent![eventId].status = "REMOVED"
+
+      currentEvents.push(removedEvent!)
+    }
+  })
+
+  return currentEvents
 }
