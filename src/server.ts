@@ -1,9 +1,9 @@
 import express from "express"
-import clientRoutes from "./routes/clientRoutes"
-import { pollAndMapEvents } from "./services/pollAndMapEvents"
+import clientRoutes from "./routes/stateRoutes"
+import { pollAndMapEvents } from "./services/stateService"
 
 const app = express()
-const PORT = process.env.PORT || 4000
+const PORT = 4000
 
 app.use(express.json())
 

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express"
-import { cachedEvents } from "../services/pollAndMapEvents"
+import { cachedEvents } from "../services/stateService"
 import { filterRemovedEvents } from "../utils/event"
 
 const router = Router()

@@ -1,4 +1,17 @@
-import { MappedEvent } from "./types"
+import { MappedEvent } from "../types"
+import { api } from "./axios"
+
+export const getMappings = async () => {
+  const {
+    data: { mappings },
+  } = await api.get("api/mappings")
+
+  return mappings.split(";").reduce((acc: Record<string, string>, cur: string) => {
+    const [key, value] = cur.split(":")
+    acc[key] = value
+    return acc
+  }, {})
+}
 
 export const getDateFromTimestamp = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -6,11 +19,13 @@ export const getDateFromTimestamp = (timestamp: number) => {
   return date.toISOString()
 }
 
-export const getScoreInfo = (info: string, mappedData: Record<string, string>) => {
+export const getScoreInfo = async (info: string) => {
   if (!info) return null
 
+  const mappings = await getMappings()
+
   return info.split("|").reduce((acc, cur) => {
-    const period = mappedData[cur.split("@")[0]]
+    const period = mappings[cur.split("@")[0]]
     const score = cur.split("@")[1]
 
     acc[period] = {
@@ -23,30 +38,38 @@ export const getScoreInfo = (info: string, mappedData: Record<string, string>) =
   }, {})
 }
 
-export const mapEvent = (eventInfo: any, mappedData: Record<string, string>) => {
-  return {
-    [eventInfo[0]]: {
-      id: eventInfo[0],
-      status: mappedData[eventInfo[6]],
-      scores: getScoreInfo(eventInfo[7], mappedData),
-      startTime: getDateFromTimestamp(Number(eventInfo[3])),
-      sport: mappedData[eventInfo[1]],
-      competitors: {
-        HOME: {
-          type: "HOME",
-          name: mappedData[eventInfo[4]],
+export const mapEvents = async (odds: string): Promise<MappedEvent[]> => {
+  const mappings = await getMappings()
+
+  return Promise.all(
+    odds.split("\n").map(async (item: string) => {
+      const event = item.split(",")
+      return {
+        [event[0]]: {
+          id: event[0],
+          status: mappings[event[6]],
+          scores: await getScoreInfo(event[7]),
+          startTime: getDateFromTimestamp(Number(event[3])),
+          sport: mappings[event[1]],
+          competitors: {
+            HOME: {
+              type: "HOME",
+              name: mappings[event[4]],
+            },
+            AWAY: {
+              type: "AWAY",
+              name: mappings[event[5]],
+            },
+          },
+          competition: mappings[event[2]],
         },
-        AWAY: {
-          type: "AWAY",
-          name: mappedData[eventInfo[5]],
-        },
-      },
-      competition: mappedData[eventInfo[2]],
-    },
-  }
+      }
+    }),
+  )
 }
 
 export const handleRemovedEvents = (prevEvents: MappedEvent[], currentEvents: MappedEvent[]) => {
+  const newEvents = [...currentEvents]
   const prevEventsKeys = prevEvents.map((event) => Object.keys(event)[0])
   const currentEventsKeys = currentEvents.map((event) => Object.keys(event)[0])
 
@@ -58,11 +81,11 @@ export const handleRemovedEvents = (prevEvents: MappedEvent[], currentEvents: Ma
 
       removedEvent![eventId].status = "REMOVED"
 
-      currentEvents.push(removedEvent!)
+      newEvents.push(removedEvent!)
     }
   })
 
-  return currentEvents
+  return newEvents
 }
 
 export const filterRemovedEvents = (events: MappedEvent[]) => {
