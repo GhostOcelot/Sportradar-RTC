@@ -79,9 +79,10 @@ export const handleRemovedEvents = (prevEvents: MappedEvent[], currentEvents: Ma
     if (!currentEventsKeysSet.has(eventId)) {
       const removedEvent = prevEvents.find((event) => event[eventId])
 
-      removedEvent![eventId].status = "REMOVED"
-
-      newEvents.push(removedEvent!)
+      if (removedEvent) {
+        removedEvent[eventId].status = "REMOVED"
+        newEvents.push(removedEvent)
+      }
     }
   })
 
@@ -92,5 +93,45 @@ export const filterRemovedEvents = (events: MappedEvent[]) => {
   return events.filter((eventObj) => {
     const event = Object.values(eventObj)[0]
     return event.status !== "REMOVED"
+  })
+}
+
+const mapEventsStatus = (events: MappedEvent[]) => {
+  return events.map((event) => {
+    const eventId = Object.keys(event)[0]
+    const eventData = Object.values(event)[0]
+
+    const score = eventData.scores?.CURRENT
+      ? `${eventData.scores.CURRENT.home} - ${eventData.scores.CURRENT.away}`
+      : null
+
+    return {
+      id: eventId,
+      status: eventData.status,
+      score,
+    }
+  })
+}
+
+export const eventsChangeLogger = (prevEvents: MappedEvent[], currentEvents: MappedEvent[]) => {
+  const previousStatus = mapEventsStatus(prevEvents)
+  const currentStatus = mapEventsStatus(currentEvents)
+
+  const currentEventMap = new Map(currentStatus.map((event) => [event.id, event]))
+
+  previousStatus.forEach((prevEvent) => {
+    const currentEvent = currentEventMap.get(prevEvent.id)
+    if (currentEvent) {
+      if (prevEvent.status !== currentEvent.status) {
+        console.log(
+          `Status changed for ${prevEvent.id}: ${prevEvent.status} -> ${currentEvent.status}`,
+        )
+      }
+      if (prevEvent.score !== currentEvent.score) {
+        console.log(
+          `Score changed for ${prevEvent.id}: ${prevEvent.score} -> ${currentEvent.score}`,
+        )
+      }
+    }
   })
 }

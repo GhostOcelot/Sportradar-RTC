@@ -1,6 +1,6 @@
 import { MappedEvent } from "../types"
 import { api } from "../utils/axios"
-import { handleRemovedEvents, mapEvents } from "../utils/event"
+import { eventsChangeLogger, handleRemovedEvents, mapEvents } from "../utils/events"
 
 export let cachedEvents: MappedEvent[] = []
 
@@ -12,9 +12,8 @@ export const pollAndMapEvents = async () => {
       console.warn("Received empty odds. Retrying...")
     } else {
       const events = await mapEvents(state.odds)
+      eventsChangeLogger(cachedEvents, events)
       cachedEvents = handleRemovedEvents(cachedEvents, events)
-
-      console.info("Cached:", cachedEvents.length, "events |", "Polled:", events.length, "events")
     }
   } catch (err: any) {
     console.error("Polling error:", err.message)

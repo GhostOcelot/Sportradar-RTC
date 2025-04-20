@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "tsc --project tsconfig.build.json",
-    "dev": "tsc --watch",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "test": "vitest run --coverage"
   },
   "author": "SR",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "axios": "^1.8.4",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "ts-node": "^10.9.2"
   }
 }
