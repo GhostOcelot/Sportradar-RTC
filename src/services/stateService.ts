@@ -14,6 +14,7 @@ export const pollAndMapEvents = async () => {
       const events = await mapEvents(state.odds)
       eventsChangeLogger(cachedEvents, events)
       cachedEvents = handleRemovedEvents(cachedEvents, events)
+      console.log("cached events:", cachedEvents.length, "| polled events:", events.length)
     }
   } catch (err: any) {
     console.error("Polling error:", err.message)

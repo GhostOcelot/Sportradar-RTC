@@ -1,4 +1,4 @@
-import { MappedEvent } from "../types"
+import { MappedEvent, Score } from "../types"
 import { api } from "./axios"
 
 export const getMappings = async () => {
@@ -8,7 +8,8 @@ export const getMappings = async () => {
 
   return mappings.split(";").reduce((acc: Record<string, string>, cur: string) => {
     const [key, value] = cur.split(":")
-    acc[key] = value
+    if (key && value) acc[key] = value
+
     return acc
   }, {})
 }
@@ -24,14 +25,13 @@ export const getScoreInfo = async (info: string) => {
 
   const mappings = await getMappings()
 
-  return info.split("|").reduce((acc, cur) => {
-    const period = mappings[cur.split("@")[0]]
-    const score = cur.split("@")[1]
+  return info.split("|").reduce((acc: Score, cur: string) => {
+    const [rawPeriod, rawScore] = cur.split("@")
+    const period = mappings[rawPeriod]
 
-    acc[period] = {
-      type: period,
-      home: score.split(":")[0],
-      away: score.split(":")[1],
+    if (period && rawScore) {
+      const [home, away] = rawScore.split(":")
+      acc[period] = { type: period, home, away }
     }
 
     return acc
@@ -70,21 +70,23 @@ export const mapEvents = async (odds: string): Promise<MappedEvent[]> => {
 
 export const handleRemovedEvents = (prevEvents: MappedEvent[], currentEvents: MappedEvent[]) => {
   const newEvents = [...currentEvents]
-  const prevEventsKeys = prevEvents.map((event) => Object.keys(event)[0])
-  const currentEventsKeys = currentEvents.map((event) => Object.keys(event)[0])
 
-  const currentEventsKeysSet = new Set(currentEventsKeys)
+  const currentEventIds = new Set(currentEvents.map((event) => Object.keys(event)[0]))
 
-  prevEventsKeys.forEach((eventId) => {
-    if (!currentEventsKeysSet.has(eventId)) {
-      const removedEvent = prevEvents.find((event) => event[eventId])
+  const prevEventsMap = new Map(
+    prevEvents.map((event) => {
+      const id = Object.keys(event)[0]
+      return [id, event]
+    }),
+  )
 
-      if (removedEvent) {
-        removedEvent[eventId].status = "REMOVED"
-        newEvents.push(removedEvent)
-      }
+  for (const [eventId, event] of prevEventsMap.entries()) {
+    if (!currentEventIds.has(eventId)) {
+      const removedEvent = { ...event }
+      removedEvent[eventId] = { ...event[eventId], status: "REMOVED" }
+      newEvents.push(removedEvent)
     }
-  })
+  }
 
   return newEvents
 }
@@ -96,7 +98,7 @@ export const filterRemovedEvents = (events: MappedEvent[]) => {
   })
 }
 
-const mapEventsStatus = (events: MappedEvent[]) => {
+export const mapEventsStatus = (events: MappedEvent[]) => {
   return events.map((event) => {
     const eventId = Object.keys(event)[0]
     const eventData = Object.values(event)[0]
@@ -124,12 +126,12 @@ export const eventsChangeLogger = (prevEvents: MappedEvent[], currentEvents: Map
     if (currentEvent) {
       if (prevEvent.status !== currentEvent.status) {
         console.log(
-          `Status changed for ${prevEvent.id}: ${prevEvent.status} -> ${currentEvent.status}`,
+          `Status changed for event ${prevEvent.id}: ${prevEvent.status} -> ${currentEvent.status}`,
         )
       }
       if (prevEvent.score !== currentEvent.score) {
         console.log(
-          `Score changed for ${prevEvent.id}: ${prevEvent.score} -> ${currentEvent.score}`,
+          `Score changed for event ${prevEvent.id}: ${prevEvent.score} -> ${currentEvent.score}`,
         )
       }
     }
